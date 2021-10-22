@@ -25,7 +25,7 @@ type TwitchUserDatabase struct {
 	UserMap map[string]map[string]TwitchUserTracker
 }
 
-func GetTwitchClient() *TwitchUserDatabase {
+func CreateTwitchDatabase() *TwitchUserDatabase {
 	client := twitch.NewAnonymousClient()
 	channelList := strings.Split(os.Getenv("TWITCH_CHANNELS"), ",")
 	userMap := make(map[string]map[string]TwitchUserTracker)
@@ -62,7 +62,7 @@ func createPrivateMsgCallback(userMap map[string]map[string]TwitchUserTracker) f
 	}
 }
 
-func (db *TwitchUserDatabase) GetUserInfo(channel, user string) UserInfo {
+func (db *TwitchUserDatabase) ReadUserInfo(channel, user string) UserInfo {
 	userMap := db.UserMap
 	if value, exists := userMap[channel]; !exists {
 		return UserInfo{
