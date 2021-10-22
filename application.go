@@ -1,40 +1,24 @@
 package main
 
 import (
-	"io/ioutil"
-	"log"
+	"fmt"
 	"net/http"
-	"os"
+
+	"github.com/julienschmidt/httprouter"
 )
 
+func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	fmt.Fprint(w, "Welcome!\n")
+}
+
+func Hello(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	fmt.Fprintf(w, "hello, %s!\n", ps.ByName("name"))
+}
+
 func main() {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "5000"
-	}
+	router := httprouter.New()
+	router.GET("/", Index)
+	router.GET("/hello/:name", Hello)
 
-	f, _ := os.Create("/var/log/golang/golang-server.log")
-	defer f.Close()
-	log.SetOutput(f)
-
-	const indexPage = "public/index.html"
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "POST" {
-			if buf, err := ioutil.ReadAll(r.Body); err == nil {
-				log.Printf("Received message: %s\n", string(buf))
-			}
-		} else {
-			log.Printf("Serving %s to %s...\n", indexPage, r.RemoteAddr)
-			http.ServeFile(w, r, indexPage)
-		}
-	})
-
-	http.HandleFunc("/scheduled", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "POST" {
-			log.Printf("Received task %s scheduled at %s\n", r.Header.Get("X-Aws-Sqsd-Taskname"), r.Header.Get("X-Aws-Sqsd-Scheduled-At"))
-		}
-	})
-
-	log.Printf("Listening on port %s\n\n", port)
-	http.ListenAndServe(":"+port, nil)
+	http.ListenAndServe(":8080", router)
 }
