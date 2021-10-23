@@ -1,0 +1,45 @@
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build-deploy:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17
+
+      - name: Run tests
+        run: |
+          go test ./...
+
+      - name: Setup AWS CLI
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Upload to S3
+        run: |
+          aws s3 cp ${{ secrets.APP_NAME }}.zip s3://packages-${{ secrets.AWS_ACCOUNT_ID }}/${{ secrets.APP_NAME }}/prod/${GITHUB_RUN_NUMBER}-${GITHUB_SHA}-${{ secrets.APP_NAME }}.zip
+      
+      - name: Create Elastic Beanstalk version
+        run: |
+          aws create-application-version \
+          --application-name ${{ secrets.APP_NAME }} \
+          --version-label ${GITHUB_RUN_NUMBER}-${GITHUB_SHA}
+          --source-bundle S3Bucket="packages-${{ secrets.AWS_ACCOUNT_ID }}",S3Key="${{ secrets.APP_NAME }}/prod/${GITHUB_RUN_NUMBER}-${GITHUB_SHA}-${APP_NAME}.zip"
+
+      - name: Set Elastic Beanstalk Version
+        run : |
+          aws update-environment \
+          --application-name ${{ secrets.APP_NAME }} \
+          --environment-name ${{ secrets.APP_ENV_NAME }} \
+          --version-label ${GITHUB_RUN_NUMBER}-${GITHUB_SHA}
