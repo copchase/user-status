@@ -1,4 +1,4 @@
-module main
+module github.com/copchase/user-status
 
 go 1.17
 

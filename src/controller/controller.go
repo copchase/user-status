@@ -1,13 +1,14 @@
-package main
+package controller
 
 import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/copchase/user-status/irc"
 	"github.com/julienschmidt/httprouter"
 )
 
-var db = CreateTwitchDatabase()
+var db = irc.CreateTwitchDatabase()
 
 func GetUserInfo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	channel := ps.ByName("channel")
