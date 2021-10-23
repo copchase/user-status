@@ -12,15 +12,16 @@ import (
 )
 
 type TwitchUserTracker struct {
-	Name      string
-	Id        string
-	Timestamp time.Time
+	Name        string
+	DisplayName string
+	Id          string
 }
 
 type UserInfo struct {
-	Name   string `json:"name"`
-	Id     string `json:"id"`
-	Online bool   `json:"online"`
+	Name        string `json:"name"`
+	DisplayName string `json:"displayName"`
+	Id          string `json:"providerId"`
+	Online      bool   `json:"online"`
 }
 
 type TwitchUserDatabase struct {
@@ -64,9 +65,9 @@ func createPrivateMsgCallback(userMap map[string]*cache.Cache) func(twitch.Priva
 
 			userName := msg.User.Name
 			userTracker := &TwitchUserTracker{
-				Name:      userName,
-				Id:        msg.User.ID,
-				Timestamp: msg.Time,
+				Name:        userName,
+				DisplayName: msg.User.DisplayName,
+				Id:          msg.User.ID,
 			}
 
 			value.Set(userName, userTracker, cache.DefaultExpiration)
@@ -88,9 +89,10 @@ func (db *TwitchUserDatabase) ReadUserInfo(channel, user string) UserInfo {
 			return *falseResponse
 		}
 		return UserInfo{
-			Name:   twitchInfo.(*TwitchUserTracker).Name,
-			Id:     twitchInfo.(*TwitchUserTracker).Id,
-			Online: true,
+			Name:        twitchInfo.(*TwitchUserTracker).Name,
+			DisplayName: twitchInfo.(*TwitchUserTracker).DisplayName,
+			Id:          twitchInfo.(*TwitchUserTracker).Id,
+			Online:      true,
 		}
 	}
 }
