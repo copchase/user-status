@@ -36,14 +36,14 @@ jobs:
 
       - name: Create Elastic Beanstalk version
         run: |
-          aws create-application-version \
+          aws elasticbeanstalk create-application-version \
           --application-name ${{ secrets.APP_NAME }} \
           --version-label ${GITHUB_RUN_NUMBER}-${GITHUB_SHA} \
           --source-bundle S3Bucket="packages-${{ secrets.AWS_ACCOUNT_ID }}",S3Key="${{ secrets.APP_NAME }}/prod/${GITHUB_RUN_NUMBER}-${GITHUB_SHA}-${APP_NAME}.zip"
 
       - name: Set Elastic Beanstalk Version
         run : |
-          aws update-environment \
+          aws elasticbeanstalk update-environment \
           --application-name ${{ secrets.APP_NAME }} \
           --environment-name ${{ secrets.APP_ENV_NAME }} \
           --version-label ${GITHUB_RUN_NUMBER}-${GITHUB_SHA}
