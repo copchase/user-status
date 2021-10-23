@@ -9,7 +9,6 @@ import (
 )
 
 func main() {
-	log.Println("Hello world!")
 	router := httprouter.New()
 	router.GET("/userinfo", controller.GetUserInfo)
 

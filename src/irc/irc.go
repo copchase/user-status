@@ -4,9 +4,11 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gempir/go-twitch-irc/v2"
+	"github.com/patrickmn/go-cache"
 )
 
 type TwitchUserTracker struct {
@@ -23,70 +25,71 @@ type UserInfo struct {
 
 type TwitchUserDatabase struct {
 	Client  *twitch.Client
-	UserMap map[string]map[string]TwitchUserTracker
+	UserMap map[string]*cache.Cache
 }
 
 func CreateTwitchDatabase() *TwitchUserDatabase {
 	client := twitch.NewAnonymousClient()
 	log.Println("Created Twitch IRC client")
 	channelList := strings.Split(os.Getenv("TWITCH_CHANNELS"), ",")
-	userMap := make(map[string]map[string]TwitchUserTracker)
+	userMap := make(map[string]*cache.Cache)
 	client.Join(channelList...)
 	client.OnPrivateMessage(createPrivateMsgCallback(userMap))
+	client.OnConnect(func() { log.Println("Connected!") })
 	log.Println("Client configuration finished")
 
-	// err := client.Connect()
-	// if err != nil {
-	// 	log.Println("an error occurred")
-	// 	log.Fatal(err)
-	// 	panic(err)
-	// }
+	// Connect via goroutine because it's a blocking operation (infinite loop)
+	go client.Connect()
 
-	log.Println("Client connected")
 	return &TwitchUserDatabase{
 		Client:  client,
 		UserMap: userMap,
 	}
 }
 
-func createPrivateMsgCallback(userMap map[string]map[string]TwitchUserTracker) func(twitch.PrivateMessage) {
+func createPrivateMsgCallback(userMap map[string]*cache.Cache) func(twitch.PrivateMessage) {
+	// this mutex should be in scope of all callbacks
+	mutex := &sync.Mutex{}
 	return func(msg twitch.PrivateMessage) {
-		channelName := msg.Channel
-		if value, exists := userMap[channelName]; !exists {
-			// channel doesn't exist on the map yet, make it
-			userMap[channelName] = make(map[string]TwitchUserTracker)
-		} else {
+		go func() {
+			channelName := msg.Channel
+			mutex.Lock()
+			value, exists := userMap[channelName]
+			if !exists {
+				// channel doesn't exist on the map yet, make it
+				userMap[channelName] = cache.New(15*time.Minute, time.Hour)
+			}
+			mutex.Unlock()
+
 			userName := msg.User.Name
-			userTracker := TwitchUserTracker{
+			userTracker := &TwitchUserTracker{
 				Name:      userName,
 				Id:        msg.User.ID,
 				Timestamp: msg.Time,
 			}
-			value[userName] = userTracker
-		}
+
+			value.Set(userName, userTracker, cache.DefaultExpiration)
+		}()
 
 	}
 }
 
 func (db *TwitchUserDatabase) ReadUserInfo(channel, user string) UserInfo {
+	falseResponse := &UserInfo{
+		Online: false,
+	}
 	userMap := db.UserMap
 	if value, exists := userMap[channel]; !exists {
-		return UserInfo{
-			Online: false,
-		}
+		return *falseResponse
 	} else {
-		twitchInfo := value[user]
-		duration, err := time.ParseDuration("-15m")
-		if err != nil {
-			return UserInfo{
-				Online: false,
-			}
+		twitchInfo, exists := value.Get(user)
+		if !exists {
+			return *falseResponse
 		}
-
 		return UserInfo{
-			Name:   twitchInfo.Name,
-			Id:     twitchInfo.Id,
-			Online: twitchInfo.Timestamp.After(time.Now().Add(duration)),
+			Name:   twitchInfo.(*TwitchUserTracker).Name,
+			Id:     twitchInfo.(*TwitchUserTracker).Id,
+			Online: true,
 		}
 	}
 }
