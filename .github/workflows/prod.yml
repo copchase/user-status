@@ -19,6 +19,10 @@ jobs:
         run: |
           go test ./...
 
+      - name: Package
+        run: |
+          zip -8 -r ${{ secrets.APP_NAME }}.zip . -x ".git*"
+
       - name: Setup AWS CLI
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -29,7 +33,7 @@ jobs:
       - name: Upload to S3
         run: |
           aws s3 cp ${{ secrets.APP_NAME }}.zip s3://packages-${{ secrets.AWS_ACCOUNT_ID }}/${{ secrets.APP_NAME }}/prod/${GITHUB_RUN_NUMBER}-${GITHUB_SHA}-${{ secrets.APP_NAME }}.zip
-      
+
       - name: Create Elastic Beanstalk version
         run: |
           aws create-application-version \
