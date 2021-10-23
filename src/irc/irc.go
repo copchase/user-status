@@ -58,6 +58,7 @@ func createPrivateMsgCallback(userMap map[string]*cache.Cache) func(twitch.Priva
 			if !exists {
 				// channel doesn't exist on the map yet, make it
 				userMap[channelName] = cache.New(15*time.Minute, time.Hour)
+				value = userMap[channelName]
 			}
 			mutex.Unlock()
 
