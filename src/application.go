@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/copchase/user-status/controller"
@@ -9,9 +9,9 @@ import (
 )
 
 func main() {
-	fmt.Println("Hello world!")
+	log.Println("Hello world!")
 	router := httprouter.New()
 	router.GET("/userinfo", controller.GetUserInfo)
 
-	http.ListenAndServe(":5000", router)
+	log.Fatal(http.ListenAndServe(":5000", router))
 }

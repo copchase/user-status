@@ -11,8 +11,8 @@ import (
 var db = irc.CreateTwitchDatabase()
 
 func GetUserInfo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	channel := ps.ByName("channel")
-	user := ps.ByName("user")
+	channel := r.URL.Query().Get("channel")
+	user := r.URL.Query().Get("user")
 	if channel == "" {
 		http.Error(w, "missing channel", http.StatusBadRequest)
 	} else if user == "" {

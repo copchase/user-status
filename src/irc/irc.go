@@ -1,6 +1,7 @@
 package irc
 
 import (
+	"log"
 	"os"
 	"strings"
 	"time"
@@ -27,16 +28,21 @@ type TwitchUserDatabase struct {
 
 func CreateTwitchDatabase() *TwitchUserDatabase {
 	client := twitch.NewAnonymousClient()
+	log.Println("Created Twitch IRC client")
 	channelList := strings.Split(os.Getenv("TWITCH_CHANNELS"), ",")
 	userMap := make(map[string]map[string]TwitchUserTracker)
 	client.Join(channelList...)
 	client.OnPrivateMessage(createPrivateMsgCallback(userMap))
+	log.Println("Client configuration finished")
 
-	err := client.Connect()
-	if err != nil {
-		panic(err)
-	}
+	// err := client.Connect()
+	// if err != nil {
+	// 	log.Println("an error occurred")
+	// 	log.Fatal(err)
+	// 	panic(err)
+	// }
 
+	log.Println("Client connected")
 	return &TwitchUserDatabase{
 		Client:  client,
 		UserMap: userMap,
