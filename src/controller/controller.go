@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/copchase/user-status/irc"
 	"github.com/julienschmidt/httprouter"
@@ -11,8 +12,8 @@ import (
 var db = irc.CreateTwitchDatabase()
 
 func GetUserInfo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	channel := r.URL.Query().Get("channel")
-	user := r.URL.Query().Get("user")
+	channel := strings.ToLower(r.URL.Query().Get("channel"))
+	user := strings.ToLower(r.URL.Query().Get("user"))
 	if channel == "" {
 		http.Error(w, "missing channel", http.StatusBadRequest)
 	} else if user == "" {
